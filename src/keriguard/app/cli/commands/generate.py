@@ -8,15 +8,11 @@ import argparse
 import asyncio
 import sys
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
 
 from keri import help
 from keri import kering
-from keri.app import connecting
 from keri.app.cli.common import existing
 
-from kept.core.authentication import CryptSigner
-from kept.essr.client import AsyncClient
 
 from keriguard.core.wireguarding import WireguardConfigManager
 
@@ -157,7 +153,10 @@ async def generate(args):
     bran = args.bran
 
     # Load existing Hab
-    with existing.existingHab(name=name, alias=alias, base=args.base, bran=bran) as (hby, hab):
+    with existing.existingHab(name=name, alias=alias, base=args.base, bran=bran) as (
+        hby,
+        hab,
+    ):
         if not hab:
             raise kering.ConfigurationError(
                 f"Identifier '{alias}' must already exist. "
@@ -187,13 +186,13 @@ async def generate(args):
 
             # Add pre/post up/down scripts if provided
             # Handle argument names with underscores (argparse converts dashes to underscores)
-            if hasattr(args, 'pre_up') and args.pre_up:
+            if hasattr(args, "pre_up") and args.pre_up:
                 config.interface.pre_up = args.pre_up
-            if hasattr(args, 'post_up') and args.post_up:
+            if hasattr(args, "post_up") and args.post_up:
                 config.interface.post_up = args.post_up
-            if hasattr(args, 'pre_down') and args.pre_down:
+            if hasattr(args, "pre_down") and args.pre_down:
                 config.interface.pre_down = args.pre_down
-            if hasattr(args, 'post_down') and args.post_down:
+            if hasattr(args, "post_down") and args.post_down:
                 config.interface.post_down = args.post_down
 
             # Save configuration
@@ -209,10 +208,10 @@ async def generate(args):
             if config.interface.listen_port:
                 print(f"Listen port: {config.interface.listen_port}")
             print(f"Public key: {public_key[:32]}...")
-            print(f"KERI Signer: {config.interface.keri_signer_qb64}")
+            print(f"KERI AID: {config.interface.keri_aid_qb64}")
 
             if backup and output_path.exists():
-                backup_path = Path(str(output_path) + '.bak')
+                backup_path = Path(str(output_path) + ".bak")
                 if backup_path.exists():
                     print(f"\nBackup created: {backup_path}")
 
@@ -224,11 +223,14 @@ async def generate(args):
             return 1
         except PermissionError:
             print(f"Permission denied: {output_path}", file=sys.stderr)
-            print("Try running with sudo or choose a different output location.", file=sys.stderr)
+            print(
+                "Try running with sudo or choose a different output location.",
+                file=sys.stderr,
+            )
             return 1
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             print(f"Failed to generate configuration: {e}", file=sys.stderr)
             return 1
-
