@@ -453,8 +453,8 @@ class WireguardInterface:
     pre_down: Optional[str] = None
     post_down: Optional[str] = None
 
-    # Metadata (not written to .conf)
-    keri_signer_qb64: Optional[str] = None
+    # Metadata (written to .conf as comments)
+    keri_aid_qb64: Optional[str] = None
 
     def __post_init__(self):
         """Validate interface configuration."""
@@ -534,6 +534,16 @@ class WireguardConfig:
                 return True
         return False
 
+    def remove_peer_by_aid(self, aid: str) -> bool:
+        """Remove a peer by public key."""
+        for i, peer in enumerate(self.peers):
+            if peer.keri_aid_qb64 == aid:
+                self.peers.pop(i)
+                self.modified_at = datetime.datetime.now(datetime.UTC)
+                logger.info(f"Removed peer {aid[:8]}... from configuration")
+                return True
+        return False
+
     def get_peer(self, public_key: str) -> Optional[WireguardPeer]:
         """Get a peer by public key."""
         for peer in self.peers:
@@ -605,8 +615,26 @@ class WireguardConfigParser:
             for line_num, line in enumerate(lines, 1):
                 line = line.strip()
 
-                # Skip empty lines and comments
-                if not line or line.startswith("#"):
+                # Skip empty lines
+                if not line:
+                    continue
+
+                # Handle metadata comments (for peers)
+                if line.startswith("#"):
+                    # Extract metadata from comments like "# Name: value" or "# KERI AID: value"
+                    if current_section == "interface":
+                        if line.startswith("# KERI AID:"):
+                            keri_aid = line.split(":", 1)[1].strip()
+                            interface_data["keri_aid_qb64"] = keri_aid
+
+                    elif current_section == "peer" and current_peer is not None:
+                        if line.startswith("# Name:"):
+                            peer_name = line.split(":", 1)[1].strip()
+                            current_peer["peer_name"] = peer_name
+                        elif line.startswith("# KERI AID:"):
+                            keri_aid = line.split(":", 1)[1].strip()
+                            current_peer["keri_aid_qb64"] = keri_aid
+                    # Skip all other comments
                     continue
 
                 # Section headers
@@ -680,6 +708,7 @@ class WireguardConfigParser:
                 post_up=interface_data.pop("post_up", None),
                 pre_down=interface_data.pop("pre_down", None),
                 post_down=interface_data.pop("post_down", None),
+                keri_aid_qb64=interface_data.pop("keri_aid_qb64", None),
             )
 
             # Create peer objects
@@ -697,6 +726,8 @@ class WireguardConfigParser:
                     endpoint=peer_data.pop("endpoint", None),
                     persistent_keepalive=peer_data.pop("persistent_keepalive", None),
                     preshared_key=peer_data.pop("preshared_key", None),
+                    peer_name=peer_data.pop("peer_name", None),
+                    keri_aid_qb64=peer_data.pop("keri_aid_qb64", None),
                 )
                 peers.append(peer)
 
@@ -783,14 +814,14 @@ class WireguardConfigWriter:
                 lines.append(f"# Created: {config.created_at.isoformat()}")
             if config.modified_at:
                 lines.append(f"# Modified: {config.modified_at.isoformat()}")
-            if config.interface.keri_signer_qb64:
-                lines.append(f"# KERI Signer: {config.interface.keri_signer_qb64}")
 
             if lines:
                 lines.append("")
 
             # Write [Interface] section
             lines.append("[Interface]")
+            if config.interface.keri_aid_qb64:
+                lines.append(f"# KERI AID: {config.interface.keri_aid_qb64}")
 
             lines.append(f"PrivateKey = {config.interface.private_key}")
             lines.append(f"Address = {', '.join(config.interface.address)}")
@@ -906,7 +937,7 @@ class WireguardConfigManager:
             dns=dns,
             mtu=mtu,
             table=table,
-            keri_signer_qb64=keri_signer.qb64,
+            keri_aid_qb64=self.hab.pre,
         )
 
         # Create config
@@ -932,7 +963,7 @@ class WireguardConfigManager:
         public_key: Optional[str] = None,
         preshared_key: Optional[str] = None,
         peer_name: Optional[str] = None,
-        keri_aid: Optional[str] = None
+        keri_aid: Optional[str] = None,
     ) -> WireguardPeer:
         """
         Add a peer to the configuration.
@@ -958,6 +989,7 @@ class WireguardConfigManager:
 
         # Generate keys if not provided
         if keri_aid is not None:
+            self.remove_peer_from_config_by_aid(config, keri_aid)
             public_key = self.key_generator.generate_peer_key(keri_aid)
 
         if public_key is None:
@@ -981,7 +1013,8 @@ class WireguardConfigManager:
 
         return peer
 
-    def remove_peer_from_config(self, config: WireguardConfig, public_key: str) -> bool:
+    @staticmethod
+    def remove_peer_from_config(config: WireguardConfig, public_key: str) -> bool:
         """
         Remove a peer from the configuration.
 
@@ -995,7 +1028,23 @@ class WireguardConfigManager:
         logger.info(f"Removing peer {public_key[:8]}... from configuration")
         return config.remove_peer(public_key)
 
-    def update_interface_port(self, config: WireguardConfig, listen_port: int) -> None:
+    @staticmethod
+    def remove_peer_from_config_by_aid(config: WireguardConfig, aid: str) -> bool:
+        """
+        Remove a peer from the configuration.
+
+        Args:
+            config: Configuration to remove peer from
+            aid: KERI AID of peer to remove
+
+        Returns:
+            True if peer was removed, False if not found
+        """
+        logger.info(f"Removing peer with aid: {aid[:8]}... from configuration")
+        return config.remove_peer_by_aid(aid)
+
+    @staticmethod
+    def update_interface_port(config: WireguardConfig, listen_port: int) -> None:
         """
         Update the interface listen port.
 

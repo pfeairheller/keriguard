@@ -6,7 +6,6 @@ Unit tests for keriguard.core.wireguarding module
 import base64
 from datetime import datetime
 from io import StringIO
-from pathlib import Path
 
 import pytest
 from keri.app import habbing
@@ -292,7 +291,7 @@ class TestConfigValidator:
             interface = WireguardInterface(
                 private_key=private_key,
                 address=["10.0.0.1/24"],
-                keri_signer_qb64=keri_signer.qb64,
+                keri_aid_qb64=keri_signer.qb64,
             )
 
             _, pub_key, _ = keygen.generate_keypair()
@@ -312,7 +311,7 @@ class TestConfigValidator:
             interface = WireguardInterface(
                 private_key=private_key,
                 address=["10.0.0.1/24"],
-                keri_signer_qb64=keri_signer.qb64,
+                keri_aid_qb64=keri_signer.qb64,
             )
 
             _, pub_key, _ = keygen.generate_keypair()
@@ -364,13 +363,13 @@ class TestWireguardInterface:
                 post_up="iptables -A FORWARD -i wg0 -j ACCEPT",
                 pre_down="echo 'Stopping WireGuard'",
                 post_down="iptables -D FORWARD -i wg0 -j ACCEPT",
-                keri_signer_qb64=keri_signer.qb64,
+                keri_aid_qb64=keri_signer.qb64,
             )
 
             assert interface.listen_port == 51820
             assert interface.dns == ["8.8.8.8", "1.1.1.1"]
             assert interface.mtu == 1420
-            assert interface.keri_signer_qb64 == keri_signer.qb64
+            assert interface.keri_aid_qb64 == keri_signer.qb64
 
     def test_interface_validation_on_creation(self):
         """Test that validation happens on interface creation."""
@@ -412,7 +411,7 @@ class TestWireguardPeer:
                 endpoint="192.0.2.1:51820",
                 persistent_keepalive=25,
                 preshared_key=psk,
-                keri_verfer_qb64=keri_signer.verfer.qb64,
+                keri_aid_qb64=keri_signer.verfer.qb64,
                 peer_name="client-1",
             )
 
@@ -656,6 +655,31 @@ AllowedIPs = 10.0.0.3/32
             assert config.peers[0].public_key == pub_key1
             assert config.peers[1].public_key == pub_key2
 
+    def test_parse_peer_with_keri_aid_metadata(self):
+        """Test parsing peer with KERI AID metadata comments."""
+        with habbing.openHab(name="keriguard", temp=True) as (hby, hab):
+            keygen = KERIKeyGenerator(hab=hab)
+            private_key, _, _ = keygen.generate_keypair()
+            _, public_key, keri_signer = keygen.generate_keypair()
+
+            conf_text = f"""[Interface]
+PrivateKey = {private_key}
+Address = 10.0.0.1/24
+
+[Peer]
+# Name: Test Peer
+# KERI AID: {keri_signer.verfer.qb64}
+PublicKey = {public_key}
+AllowedIPs = 10.0.0.2/32
+"""
+
+            config = WireguardConfigParser.parse_stream(StringIO(conf_text))
+
+            assert len(config.peers) == 1
+            assert config.peers[0].public_key == public_key
+            assert config.peers[0].peer_name == "Test Peer"
+            assert config.peers[0].keri_aid_qb64 == keri_signer.verfer.qb64
+
     def test_parse_missing_interface(self):
         """Test parsing config without interface section."""
         conf_text = """[Peer]
@@ -746,7 +770,7 @@ class TestWireguardConfigWriter:
                 endpoint="192.0.2.1:51820",
                 persistent_keepalive=25,
                 peer_name="client-1",
-                keri_verfer_qb64=keri_signer2.verfer.qb64,
+                keri_aid_qb64=keri_signer2.verfer.qb64,
             )
 
             config = WireguardConfig(
@@ -794,7 +818,7 @@ class TestWireguardConfigWriter:
                 private_key=private_key,
                 address=["10.0.0.1/24"],
                 listen_port=51820,
-                keri_signer_qb64=keri_signer.qb64,
+                keri_aid_qb64=keri_signer.qb64,
             )
 
             _, public_key, _ = keygen.generate_keypair()
@@ -849,7 +873,7 @@ class TestWireguardConfigManager:
             assert config.interface.dns == ["8.8.8.8"]
             assert config.config_name == "test-server"
             assert config.description == "Test server configuration"
-            assert config.interface.keri_signer_qb64 is not None
+            assert config.interface.keri_aid_qb64 is not None
 
     def test_add_peer_to_config(self):
         """Test adding a peer to configuration."""
@@ -863,6 +887,7 @@ class TestWireguardConfigManager:
                 endpoint="192.0.2.1:51820",
                 persistent_keepalive=25,
                 peer_name="client-1",
+                keri_aid=hab.pre,
             )
 
             assert peer is not None
@@ -872,7 +897,7 @@ class TestWireguardConfigManager:
             assert peer.endpoint == "192.0.2.1:51820"
             assert peer.persistent_keepalive == 25
             assert peer.peer_name == "client-1"
-            assert peer.keri_verfer_qb64 is not None
+            assert peer.keri_aid_qb64 is not None
 
     def test_add_peer_with_public_key(self):
         """Test adding a peer with provided public key."""
@@ -890,7 +915,7 @@ class TestWireguardConfigManager:
             )
 
             assert peer.public_key == public_key
-            assert peer.keri_verfer_qb64 is None  # No KERI tracking when key provided
+            assert peer.keri_aid_qb64 is None  # No KERI tracking when key provided
 
     def test_remove_peer_from_config(self):
         """Test removing a peer from configuration."""
@@ -898,7 +923,9 @@ class TestWireguardConfigManager:
             manager = WireguardConfigManager(hab=hab)
             config = manager.generate_config(address=["10.0.0.1/24"])
 
-            peer = manager.add_peer_to_config(config, allowed_ips=["10.0.0.2/32"])
+            peer = manager.add_peer_to_config(
+                config, allowed_ips=["10.0.0.2/32"], keri_aid=hab.pre
+            )
 
             result = manager.remove_peer_from_config(config, peer.public_key)
 
@@ -942,6 +969,7 @@ class TestWireguardConfigManager:
                 config,
                 allowed_ips=["10.0.0.2/32"],
                 endpoint="192.0.2.1:51820",
+                keri_aid=hab.pre,
             )
 
             # Save to file

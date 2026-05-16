@@ -43,7 +43,7 @@ parser.add_argument(
     "--public-key",
     "-k",
     type=str,
-    help="Peer's public key (base64-encoded, 32 bytes). Required unless --generate-keys is used.",
+    help="Peer's public key (base64-encoded, 32 bytes). Required unless --keri-aid is used.",
 )
 
 parser.add_argument(
@@ -89,7 +89,6 @@ parser.add_argument(
 # Key generation options (KERI integration)
 parser.add_argument(
     "--keri-aid",
-    "-k",
     type=str,
     default=None,
     help="Auto-generate keypair from KERI AID current signing key (alternative to --public-key)",
@@ -105,7 +104,7 @@ parser.add_argument(
 parser.add_argument(
     "--keystore-alias",
     type=str,
-    default="owl",
+    default="keriguard",
     help="KERI Hab alias (for key generation, default: owl)",
 )
 
@@ -150,16 +149,16 @@ async def add_peer(args):
         return 1
 
     # Validate public key requirements
-    if not args.public_key and not args.generate_keys:
+    if not args.public_key and not args.keri_aid:
         print(
-            "Error: Either --public-key or --generate-keys must be specified",
+            "Error: Either --public-key or --keri-aid must be specified",
             file=sys.stderr,
         )
         return 1
 
-    if args.public_key and args.generate_keys:
+    if args.public_key and args.keri_aid:
         print(
-            "Error: Cannot specify both --public-key and --generate-keys",
+            "Error: Cannot specify both --public-key and --keri-aid",
             file=sys.stderr,
         )
         return 1
@@ -215,7 +214,7 @@ async def add_peer(args):
                 if peer.persistent_keepalive:
                     print(f"Keepalive: {peer.persistent_keepalive}s")
                 if peer.keri_aid_qb64:
-                    print(f"KERI Verfer: {peer.keri_aid_qb64}")
+                    print(f"KERI AID: {peer.keri_aid_qb64}")
 
         else:
             # Manual public key - no Hab needed
