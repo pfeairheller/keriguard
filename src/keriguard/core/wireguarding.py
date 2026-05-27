@@ -21,6 +21,11 @@ from io import StringIO
 logger = help.ogler.getLogger()
 
 
+class Schema:
+    INTERFACE_SCHEMA = "ECRYEV1yPd4vnYNMqFSbTzvoxfz9iFlRMRTquU2uCAbY"
+    CONNECTION_SCHEMA = "EFUl2WDAhhdvqba5GhSxWbSU7eUGx_ZtbRZHgkXBFR-R"
+
+
 # ============================================================================
 # Exceptions
 # ============================================================================

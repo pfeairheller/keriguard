@@ -12,15 +12,11 @@ from keri.vdr import verifying
 from sentinel.framework import CredentialEvent
 from keri import help
 
+from keriguard.core.wireguarding import Schema
 from ..config import SentinelConfig
 from ..services.cred_service import CredService
 
 logger = help.ogler.getLogger()
-
-
-class Schema:
-    INTERFACE_SCHEMA = "ECRYEV1yPd4vnYNMqFSbTzvoxfz9iFlRMRTquU2uCAbY"
-    CONNECTION_SCHEMA = "EFUl2WDAhhdvqba5GhSxWbSU7eUGx_ZtbRZHgkXBFR-R"
 
 
 class CredHandler:
@@ -34,7 +30,7 @@ class CredHandler:
             kvy=config.hby.kvy, tvy=self.rgy.tvy, vry=self.verifier
         )
 
-        self.service = CredService(config, config.rgy)
+        self.service = CredService(config.hby, config.rgy, config.config_dir)
 
     async def process(self, event: CredentialEvent):
         """

@@ -12,7 +12,6 @@ from keri.core.serdering import SerderACDC
 from keri.kering import MissingEntryError
 
 from keriguard.core import WireguardConfigManager
-from ..config import SentinelConfig
 
 logger = help.ogler.getLogger()
 
@@ -20,9 +19,10 @@ logger = help.ogler.getLogger()
 class CredService:
     """Service for managing credential-based access control."""
 
-    def __init__(self, config: SentinelConfig, rgy):
-        self.config = config
+    def __init__(self, hby, rgy, config_dir):
+        self.hby = hby
         self.rgy = rgy
+        self.config_dir = config_dir
 
     async def process_interface_credential(self, said: str, creder: SerderACDC):
         """
@@ -42,7 +42,7 @@ class CredService:
         interface_description = metadata.get("interfaceDescription", "")
 
         recipient = payload.get("i")
-        if (hab := self.config.hby.habs.get(recipient)) is None:
+        if (hab := self.hby.habs.get(recipient)) is None:
             logger.info(f"Recipient {recipient} not found in hby, this is for a peer.")
             return
 
@@ -66,7 +66,7 @@ class CredService:
 
         # Save configuration
         manager.save_config(
-            config, Path(self.config.config_dir) / f"{interface_name}.conf", backup=True
+            config, Path(self.config_dir) / f"{interface_name}.conf", backup=True
         )
 
         logger.debug(f"Interface credential service processing complete for {said}")
@@ -96,14 +96,14 @@ class CredService:
 
             local_payload = local_interface_creder.attrib
             recipient = local_payload.get("i")
-            if (hab := self.config.hby.habs.get(recipient)) is None:
+            if (hab := self.hby.habs.get(recipient)) is None:
                 logger.debug(f"Recipient {recipient} not found in habby")
                 return
 
             metadata = local_payload.get("interfaceMetadata")
 
             interface_name = metadata.get("interfaceName")
-            config_path = Path(self.config.config_dir) / f"{interface_name}.conf"
+            config_path = Path(self.config_dir) / f"{interface_name}.conf"
             if not config_path.exists() or not config_path.is_file():
                 logger.error(
                     f"Interface configuration file not found for {interface_name}"

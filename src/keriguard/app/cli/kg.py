@@ -21,7 +21,7 @@ def main():
         return -1
 
     try:
-        args.handler(args)
+        return args.handler(args)
 
     except Exception as ex:
         import os
@@ -36,4 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())
