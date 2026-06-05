@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keriguard.core.ipexing module
+keriguard.core.kering module
 
 Methods for creating IPEX messages
 

@@ -12,6 +12,7 @@ from keri.core.serdering import SerderACDC
 from keri.kering import MissingEntryError
 
 from keriguard.core import WireguardConfigManager
+from keriguard.core.systeming import control_wireguard, WireGuardAction
 
 logger = help.ogler.getLogger()
 
@@ -69,8 +70,10 @@ class CredService:
             config, Path(self.config_dir) / f"{interface_name}.conf", backup=True
         )
 
+        await control_wireguard(WireGuardAction.ENABLE, interface_name)
+        await control_wireguard(WireGuardAction.START, interface_name)
+
         logger.debug(f"Interface credential service processing complete for {said}")
-        pass
 
     async def process_connection_credential(self, said: str, creder: SerderACDC):
         """
@@ -174,6 +177,8 @@ class CredService:
 
             # Save updated configuration
             manager.save_config(config, config_path, backup=True)
+
+            await control_wireguard(WireGuardAction.RESTART, interface_name)
 
         except MissingEntryError:
             logger.error(f"Missing entry for interface credential: {said}")

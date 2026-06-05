@@ -33,6 +33,7 @@ dependencies = [
     "requests>=2.32.4",
     'requests_toolbelt==1.0.0',
     'cryptography>=42.0.0',
+    "dbus-fast==5.0.21"
 ]
 
 [project.optional-dependencies]
@@ -46,7 +47,7 @@ app = [
     "keriguard[sentinel-handler]",
     "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
-    "alembic>=1.14.0",
+    "alembic>=1.14.0"
 ]
 
 # Development dependencies
@@ -63,7 +64,7 @@ test = [
     "pytest>=7.0.0",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=4.0.0",
-    "pytest-mock>=3.10.0",
+    "pytest-mock>=3.10.0"
 ]
 
 # Sentinel handler tests (requires sentinel-handler extra)
