@@ -147,15 +147,21 @@ class Issuer:
 
         # Validate first interface credential and get registry info
         peer1_name = peers[0]["connection_metadata"]["connectionName"]
-        results = self.org.find("alias", peer1_name)
-        if not results:
+        peer1_aid = ""
+        if (recipient_hab := self.hby.habByName(peer1_name)) is not None:
+            peer1_aid = recipient_hab.pre
+        else:
+            results = self.org.find("alias", peer1_name)
+            if results:
+                peer1_aid = results[0].get("id")
+
+        if not peer1_aid:
             raise kering.ConfigurationError(
                 f"Recipient '{peer1_name}' not found. "
-                f"Resolve recipient OOBI first with: kli oobi resolve --name {peer1_name} --oobi-alias <alias> --oobi "
+                f"If not local, resolve recipient OOBI first with: kli oobi resolve --name {peer1_name} --oobi-alias <alias> --oobi "
                 f"<url>"
             )
 
-        peer1_aid = results[0].get("id")
         saiders = self.rgy.reger.subjs.get(peer1_aid)
         creder = None
         for saider in saiders:
@@ -186,15 +192,21 @@ class Issuer:
 
         # Validate second interface credential
         peer2_name = peers[1]["connection_metadata"]["connectionName"]
-        results = self.org.find("alias", peer2_name)
-        if not results:
+        peer2_aid = ""
+        if (recipient_hab := self.hby.habByName(peer2_name)) is not None:
+            peer2_aid = recipient_hab.pre
+        else:
+            results = self.org.find("alias", peer2_name)
+            if results:
+                peer2_aid = results[0].get("id")
+
+        if not peer2_aid:
             raise kering.ConfigurationError(
                 f"Recipient '{peer2_name}' not found. "
-                f"Resolve recipient OOBI first with: kli oobi resolve --name {peer1_name} --oobi-alias <alias> --oobi "
+                f"If not local, resolve recipient OOBI first with: kli oobi resolve --name {peer2_name} --oobi-alias <alias> --oobi "
                 f"<url>"
             )
 
-        peer2_aid = results[0].get("id")
         saiders = self.rgy.reger.subjs.get(peer2_aid)
         creder2 = None
         for saider in saiders:
