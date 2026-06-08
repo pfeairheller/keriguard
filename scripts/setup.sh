@@ -40,12 +40,12 @@ kli vc schema import --name peer --schema "${KERIGUARD_SCHEMA_DIR}/wireguard-int
 kli vc schema import --name peer --schema "${KERIGUARD_SCHEMA_DIR}/wireguard-connection-v1.0.0.json"
 
 echo 'resolving keriguard'
-kli oobi resolve --name admin --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name keriguard-sentinel --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --name admin --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness
+kli oobi resolve --name keriguard-sentinel --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness
 echo 'resolving admin'
-kli oobi resolve --name keriguard --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name registrar --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name peer --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --name keriguard --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
+kli oobi resolve --name registrar --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
+kli oobi resolve --name peer --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
 echo 'resolving peer'
 kli oobi resolve --name admin --oobi-alias peer --oobi http://127.0.0.1:5642/oobi/EK9MXvIlVUcs9sztuX3oTJkBq-BqdKUxyLZmiOqXWZ8u/witness
 kli oobi resolve --name keriguard --oobi-alias peer --oobi http://127.0.0.1:5642/oobi/EK9MXvIlVUcs9sztuX3oTJkBq-BqdKUxyLZmiOqXWZ8u/witness

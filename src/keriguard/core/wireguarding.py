@@ -122,7 +122,7 @@ class KERIKeyGenerator:
             return public_key_b64
 
         except KeyError:
-            logger.error(f"KERI AID {aid} not found in Hab")
+            logger.error(f"KERI AID {aid} not found in kevers")
             raise KeyGenerationError(f"KERI AID not found: {aid}")
         except Exception as e:
             logger.error(f"Failed to generate keypair: {e}")
