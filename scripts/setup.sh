@@ -38,18 +38,17 @@ kli vc schema import --name admin --schema "${KERIGUARD_SCHEMA_DIR}/wireguard-co
 kli vc schema import --name peer --schema "${KERIGUARD_SCHEMA_DIR}/wireguard-interface-v1.0.0.json"
 kli vc schema import --name peer --schema "${KERIGUARD_SCHEMA_DIR}/wireguard-connection-v1.0.0.json"
 
+kli vc registry incept --name admin --alias admin --registry-name admin
+
 echo 'resolving keriguard'
 kli oobi resolve --name admin --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness
 kli oobi resolve --name keriguard-sentinel --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness
-kli oobi resolve --name registrar  --oobi-alias keriguard --oobi http://127.0.0.1:5642/oobi/EMukoPLVfJ2sxulTtaAf4oTyNESAeoZGEkrEXT8JXjf0/witness
 echo 'resolving admin'
 kli oobi resolve --name keriguard --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
 kli oobi resolve --name registrar --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
 kli oobi resolve --name peer --oobi-alias admin --oobi http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness
 echo 'resolving peer'
 kli oobi resolve --name admin --oobi-alias peer --oobi http://127.0.0.1:5642/oobi/EK9MXvIlVUcs9sztuX3oTJkBq-BqdKUxyLZmiOqXWZ8u/witness
-kli oobi resolve --name registrar --oobi-alias peer --oobi http://127.0.0.1:5642/oobi/EK9MXvIlVUcs9sztuX3oTJkBq-BqdKUxyLZmiOqXWZ8u/witness
-# kli oobi resolve --name keriguard --oobi-alias peer --oobi http://127.0.0.1:5642/oobi/EK9MXvIlVUcs9sztuX3oTJkBq-BqdKUxyLZmiOqXWZ8u/witness
 echo 'resolving registrar'
 kli import --name keriguard --alias registrar --file /tmp/registrar.cesr
 kli import --name registrar-sentinel --alias registrar --file /tmp/registrar.cesr
@@ -57,5 +56,3 @@ kli import --name admin --alias registrar --file /tmp/registrar.cesr
 echo 'resolving sentinels'
 kli import --name keriguard --alias keriguard-sentinel --file /tmp/keriguard-sentinel.cesr
 kli import --name registrar --alias registrar-sentinel --file /tmp/registrar-sentinel.cesr
-
-kli vc registry incept --name admin --alias admin --registry-name admin

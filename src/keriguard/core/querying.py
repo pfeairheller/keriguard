@@ -204,7 +204,7 @@ class Receiptor:
             bool: True if successful, False if failed
         """
         try:
-            url = self._build_witness_url(hab, wit, "/receipts")
+            url = self._build_witness_url(hab, wit, "/")
             headers = {CESR_DESTINATION_HEADER: wit}
             await self._post_cesr(url, wit, bytearray(msg_bytes), headers)
             return True
@@ -465,10 +465,10 @@ class Receiptor:
             events = list(hab.db.clonePreIter(pre=pre))
 
             if not events:
-                logger.debug(f"No events to send for catchup to witness {wit}")
+                logger.info(f"No events to send for catchup to witness {wit}")
                 return
 
-            logger.debug(
+            logger.info(
                 f"Catching up witness {wit} with {len(events)} events in batches of {batch_size}"
             )
 
@@ -490,7 +490,7 @@ class Receiptor:
                             f"Error sending event {i + idx} to witness {wit}: {result}"
                         )
 
-            logger.debug(f"Completed catchup for witness {wit}")
+            logger.info(f"Completed catchup for witness {wit}")
 
         except (kering.MissingEntryError, httpx.HTTPError) as e:
             logger.error(f"unable to catchup witness {wit}: {e}")

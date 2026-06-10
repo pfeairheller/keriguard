@@ -10,11 +10,14 @@ import asyncio
 import re
 import sys
 
+import httpx
 from keri import help
+from keri.app.httping import CESR_CONTENT_TYPE
 from keri import kering
 from keri.app import connecting
 from keri.app.cli.common import existing
 from keri.help import helping
+from keri.peer import exchanging
 from keri.vdr import credentialing
 
 from keriguard.core.kering import Issuer
@@ -149,6 +152,12 @@ parser.add_argument(
     help="Output file for credential",
 )
 parser.add_argument(
+    "--registrar-url",
+    type=str,
+    default=None,
+    help="URL to send grant data via PUT request (mutually exclusive with --output)",
+)
+parser.add_argument(
     "--authenticate",
     "-z",
     help="Prompt the controller for authentication codes for each witness",
@@ -164,6 +173,14 @@ async def issue_credential(args):
     alias = args.alias
     bran = args.bran
 
+    # Validate mutual exclusivity of --output and --registrar-url
+    if args.output and args.registrar_url:
+        print(
+            "Error: --output and --registrar-url are mutually exclusive. Please specify only one.",
+            file=sys.stderr,
+        )
+        return 1
+
     # Load existing Hab
     with existing.existingHab(name=name, alias=alias, base=args.base, bran=bran) as (
         hby,
@@ -171,9 +188,11 @@ async def issue_credential(args):
     ):
         # Validate recipient exists in kevers
         recipient = ""
+        recipient_name = ""
         if args.recipient not in hby.kevers:
             if (recipient_hab := hby.habByName(args.recipient)) is not None:
                 recipient = recipient_hab.pre
+                recipient_name = recipient_hab.alias
             else:
                 org = connecting.Organizer(hby=hby)
                 results = org.find("alias", args.recipient)
@@ -183,9 +202,20 @@ async def issue_credential(args):
                         f"Resolve recipient OOBI first with: kli oobi resolve --name {name} --oobi-alias <alias> --oobi <url>"
                     )
                 recipient = results[0].get("id")
+                recipient_name = args.recipient
 
         else:
             recipient = args.recipient
+
+        org = connecting.Organizer(hby=hby)
+        result = org.get(recipient)
+        if not result:
+            raise kering.ConfigurationError(
+                f"Recipient '{args.recipient}' not a contact. "
+                f"Resolve recipient OOBI first with: kli oobi resolve --name {name} --oobi-alias <alias> --oobi <url>"
+            )
+
+        oobi = result.get("oobi")
 
         # Create Regery
         rgy = credentialing.Regery(hby=hby, name=hby.name, base=hby.base, temp=hby.temp)
@@ -281,10 +311,53 @@ async def issue_credential(args):
             )
 
             # Output credential grant
-            if args.output:
+            if args.output or args.registrar_url:
                 grant = issuer.grant(creder.said, recipient)
-                with open(args.output, "wb") as f:
-                    f.write(grant)
+
+                if args.output:
+                    with open(args.output, "wb") as f:
+                        f.write(grant)
+
+                if args.registrar_url:
+                    data = dict(aid=recipient, alias=recipient_name, oobi=oobi)
+                    exn, end = exchanging.exchange(
+                        route="/introduction",
+                        payload=data,
+                        sender=hab.pre,
+                        date=helping.nowIso8601(),
+                    )
+                    introduction = hab.endorse(serder=exn, last=False, pipelined=False)
+
+                    try:
+
+                        # Send grant data to registrar via PUT request
+                        response = httpx.put(
+                            args.registrar_url,
+                            content=bytes(grant),
+                            headers={"Content-Type": CESR_CONTENT_TYPE},
+                            timeout=30.0,
+                        )
+                        response.raise_for_status()
+
+                        print(
+                            f"  Registrar: Grant sent to {args.registrar_url} (HTTP {response.status_code})",
+                            file=sys.stderr,
+                        )
+
+                        # Send introduction data to registrar via PUT request
+                        response = httpx.put(
+                            args.registrar_url,
+                            content=bytes(introduction),
+                            headers={"Content-Type": CESR_CONTENT_TYPE},
+                            timeout=30.0,
+                        )
+                        response.raise_for_status()
+
+                    except httpx.HTTPError as e:
+                        print(
+                            f"Failed to send grant to registrar: {e}", file=sys.stderr
+                        )
+                        return 1
 
             # Success message
             print("\n✓ Interface credential issued successfully", file=sys.stderr)
@@ -294,6 +367,8 @@ async def issue_credential(args):
             print(f"  Registry: {registry_name}", file=sys.stderr)
             if args.output:
                 print(f"  Output: {args.output}", file=sys.stderr)
+            if args.registrar_url:
+                print(f"  Registrar URL: {args.registrar_url}", file=sys.stderr)
 
             return 0
 

@@ -9,7 +9,9 @@ import argparse
 import asyncio
 import sys
 
+import httpx
 from keri import help
+from keri.app.httping import CESR_CONTENT_TYPE
 from keri import kering
 from keri.app.cli.common import existing
 from keri.help import helping
@@ -60,6 +62,12 @@ parser.add_argument(
     type=str,
     default=None,
     help="Output file for credential",
+)
+parser.add_argument(
+    "--registrar-url",
+    type=str,
+    default=None,
+    help="URL to send grant data via PUT request (mutually exclusive with --output)",
 )
 parser.add_argument(
     "--authenticate",
@@ -142,6 +150,14 @@ async def issue_credential(args):
     name = args.name
     alias = args.alias
     bran = args.bran
+
+    # Validate mutual exclusivity of --output and --registrar-url
+    if args.output and args.registrar_url:
+        print(
+            "Error: --output and --registrar-url are mutually exclusive. Please specify only one.",
+            file=sys.stderr,
+        )
+        return 1
 
     # Validate input counts
     if not args.peer or len(args.peer) != 2:
@@ -227,10 +243,34 @@ async def issue_credential(args):
             )
 
             # Output credential grant
-            if args.output:
+            if args.output or args.registrar_url:
                 grant = issuer.grant(creder.said, creder.attrib.get("i"))
-                with open(args.output, "wb") as f:
-                    f.write(grant)
+
+                if args.output:
+                    with open(args.output, "wb") as f:
+                        f.write(grant)
+
+                if args.registrar_url:
+                    try:
+                        # Send grant data to registrar via PUT request
+                        response = httpx.put(
+                            args.registrar_url,
+                            content=bytes(grant),
+                            headers={"Content-Type": CESR_CONTENT_TYPE},
+                            timeout=30.0,
+                        )
+                        response.raise_for_status()
+
+                        print(
+                            f"  Registrar: Grant sent to {args.registrar_url} (HTTP {response.status_code})",
+                            file=sys.stderr,
+                        )
+
+                    except httpx.HTTPError as e:
+                        print(
+                            f"Failed to send grant to registrar: {e}", file=sys.stderr
+                        )
+                        return 1
 
             # Success message
             print("\n✓ Connection credential issued successfully", file=sys.stderr)
@@ -249,6 +289,8 @@ async def issue_credential(args):
             print(f"  Registry: {creder.sad.get('ri')}", file=sys.stderr)
             if args.output:
                 print(f"  Output: {args.output}", file=sys.stderr)
+            if args.registrar_url:
+                print(f"  Registrar URL: {args.registrar_url}", file=sys.stderr)
 
             return 0
 
