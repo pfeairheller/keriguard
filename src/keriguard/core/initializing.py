@@ -55,26 +55,20 @@ def load_oobi(hby, oobi: str, alias: str):
     return aid
 
 
-class RegistrarConfig:
-    """Configuration for the registrar."""
+class RegistrarKeriguardConfig:
 
     def __init__(self, data: Dict[str, Any]):
         self._data = data
 
     @property
     def aid(self) -> str:
-        """The registrar's AID."""
+        """The issuer's AID."""
         return self._data.get("aid", "")
 
     @property
     def oobi(self) -> str:
-        """The registrar's OOBI URL."""
+        """The issuer's OOBI URL."""
         return self._data.get("oobi", "")
-
-    @property
-    def url(self) -> Optional[str]:
-        """The registrar's API endpoint URL."""
-        return self._data.get("url")
 
     @property
     def ipaddress(self) -> Optional[str]:
@@ -101,6 +95,34 @@ class RegistrarConfig:
             self._data.pop("endpoint", None)
         else:
             self._data["endpoint"] = value
+
+
+class RegistrarConfig:
+    """Configuration for the registrar."""
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+        self._keriguard = RegistrarKeriguardConfig(data.get("keriguard", {}))
+
+    @property
+    def aid(self) -> str:
+        """The registrar's AID."""
+        return self._data.get("aid", "")
+
+    @property
+    def oobi(self) -> str:
+        """The registrar's OOBI URL."""
+        return self._data.get("oobi", "")
+
+    @property
+    def url(self) -> Optional[str]:
+        """The registrar's API endpoint URL."""
+        return self._data.get("url")
+
+    @property
+    def keriguard(self) -> RegistrarKeriguardConfig:
+        """The registrar configuration."""
+        return self._keriguard
 
 
 class IssuerConfig:

@@ -19,7 +19,9 @@ class Registrar:
     """
 
     aid: str
+    keriguard_aid: str
     oobi: str
+    keriguard_oobi: str
     url: Optional[str] = None
     ipaddress: Optional[str] = None
     endpoint: Optional[str] = None
@@ -68,7 +70,9 @@ class KERIGuardBaser(dbing.LMDBer):
     def set_registrar(
         self,
         aid: str,
+        keriguard_aid: str,
         oobi: str,
+        keriguard_oobi: str,
         url: Optional[str] = None,
         ipaddress: Optional[str] = None,
         endpoint: Optional[str] = None,
@@ -76,7 +80,13 @@ class KERIGuardBaser(dbing.LMDBer):
         self.registrar.pin(
             keys=("registrar",),
             val=Registrar(
-                aid=aid, oobi=oobi, url=url, ipaddress=ipaddress, endpoint=endpoint
+                aid=aid,
+                keriguard_aid=keriguard_aid,
+                oobi=oobi,
+                keriguard_oobi=keriguard_oobi,
+                url=url,
+                ipaddress=ipaddress,
+                endpoint=endpoint,
             ),
         )
 

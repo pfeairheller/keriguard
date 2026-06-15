@@ -13,7 +13,7 @@ from sentinel.framework import CredentialEvent
 from keri import help
 
 from keriguard.core.wireguarding import Schema
-from ..config import SentinelConfig
+from ..config import SentinelHandlerConfig
 from ..services.cred_service import CredService
 
 logger = help.ogler.getLogger()
@@ -22,7 +22,7 @@ logger = help.ogler.getLogger()
 class CredHandler:
     """Handler for credential events - manages credential-based access control."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         self.config = config
         self.rgy = config.rgy
         self.verifier = verifying.Verifier(hby=config.hby, reger=config.rgy.reger)

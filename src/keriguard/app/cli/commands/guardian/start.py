@@ -15,7 +15,7 @@ from keri.vdr import credentialing
 from sentinel.framework import register_handler, run
 
 from keriguard.app.sentinel import KeriguardEventHandler
-from keriguard.app.sentinel.config import SentinelConfig
+from keriguard.app.sentinel.config import SentinelHandlerConfig
 
 parser = argparse.ArgumentParser(description="Start KERIguard Sentinel event handler")
 parser.set_defaults(handler=lambda args: start(args))
@@ -113,7 +113,7 @@ def start(args):
     rgy = credentialing.Regery(hby=hby, name=hby.name, base=hby.base, temp=hby.temp)
 
     # Create configuration
-    config = SentinelConfig(
+    config = SentinelHandlerConfig(
         export_dir=str(export_dir),
         sentinel_aid=args.sentinel_aid,
         poll_interval=args.poll_interval,

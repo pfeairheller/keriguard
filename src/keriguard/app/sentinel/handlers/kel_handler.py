@@ -8,7 +8,7 @@ KEL (Key Event Log) event handler.
 from sentinel.framework import KELEvent
 from keri import help
 
-from ..config import SentinelConfig
+from ..config import SentinelHandlerConfig
 from ..services.kel_service import KELService
 
 logger = help.ogler.getLogger()
@@ -17,7 +17,7 @@ logger = help.ogler.getLogger()
 class KELHandler:
     """Handler for KEL events - manages peer configs based on key state changes."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         self.config = config
         self.service = KELService(config)
 

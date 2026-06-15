@@ -86,8 +86,8 @@ class CredService:
                     endpoint=registrar.endpoint,
                     persistent_keepalive=None,
                     preshared_key=None,
-                    peer_name="registrar",
-                    keri_aid=registrar.aid,
+                    peer_name="registrar-keriguard",
+                    keri_aid=registrar.keriguard_aid,
                 )
 
         else:

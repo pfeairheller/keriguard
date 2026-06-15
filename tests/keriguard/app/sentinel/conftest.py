@@ -9,7 +9,7 @@ pytest.importorskip("sentinel")
 
 from sentinel.framework import KELEvent, TELEvent, CredentialEvent
 from keriguard.app.sentinel.handler import KeriguardEventHandler
-from keriguard.app.sentinel.config import SentinelConfig
+from keriguard.app.sentinel.config import SentinelHandlerConfig
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def test_config(tmp_path):
     mock_rgy.reger = Mock()
     mock_rgy.tvy = Mock()
 
-    return SentinelConfig(
+    return SentinelHandlerConfig(
         export_dir=str(tmp_path / "export"),
         poll_interval=1.0,
         config_dir=str(tmp_path / "configs"),

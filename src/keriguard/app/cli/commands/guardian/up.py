@@ -77,12 +77,6 @@ parser.add_argument(
     help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
 )
 parser.add_argument(
-    "--authenticate",
-    "-z",
-    help="Prompt the controller for authentication codes for each witness",
-    action="store_true",
-)
-parser.add_argument(
     "--sentinel-config-path",
     default=None,
     required=False,
@@ -172,12 +166,23 @@ async def up(args):
     # Get keriguard KEL into Sentinel so he can respond to requests.
     load_oobi(hby=sentinel_hby, oobi=keriguard_oobi, alias="keriguard")
     load_oobi(hby=keriguard_hby, oobi=config.registrar.oobi, alias="registrar")
+    load_oobi(
+        hby=keriguard_hby,
+        oobi=config.registrar.keriguard.oobi,
+        alias="registrar-keriguard",
+    )
     load_oobi(hby=keriguard_hby, oobi=config.issuer.oobi, alias="issuer")
     load_oobi(hby=sentinel_hby, oobi=config.registrar.oobi, alias="registrar")
+    load_oobi(
+        hby=sentinel_hby,
+        oobi=config.registrar.keriguard.oobi,
+        alias="registrar-keriguard",
+    )
     load_oobi(hby=sentinel_hby, oobi=config.issuer.oobi, alias="issuer")
 
     if (
         config.registrar.aid not in keriguard_hby.kevers
+        or config.registrar.keriguard.aid not in keriguard_hby.kevers
         or config.issuer.aid not in keriguard_hby.kevers
     ):
         raise ConfigurationError(
@@ -207,10 +212,12 @@ async def up(args):
     kgb = KERIGuardBaser(name=args.name, base=args.base)
     kgb.set_registrar(
         aid=config.registrar.aid,
+        keriguard_aid=config.registrar.keriguard.aid,
         oobi=config.registrar.oobi,
+        keriguard_oobi=config.registrar.keriguard.oobi,
         url=config.registrar.url,
-        ipaddress=config.registrar.ipaddress,
-        endpoint=config.registrar.endpoint,
+        ipaddress=config.registrar.keriguard.ipaddress,
+        endpoint=config.registrar.keriguard.endpoint,
     )
 
     kgb.set_issuer(aid=config.issuer.aid, oobi=config.issuer.oobi)

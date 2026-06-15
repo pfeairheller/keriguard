@@ -6,7 +6,7 @@ Business logic for TEL event processing.
 """
 
 from keri import help
-from ..config import SentinelConfig
+from ..config import SentinelHandlerConfig
 
 logger = help.ogler.getLogger()
 
@@ -14,7 +14,7 @@ logger = help.ogler.getLogger()
 class TELService:
     """Service for managing transaction-based peer authorizations."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         self.config = config
 
     async def process_transaction_event_log(self, aid: str, transaction_data: bytes):

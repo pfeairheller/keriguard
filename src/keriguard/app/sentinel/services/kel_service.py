@@ -20,7 +20,7 @@ from keriguard.core import (
 )
 from keriguard.core.systeming import WireGuardControlError, restart_wireguard
 from keriguard.core.wireguarding import Schema
-from ..config import SentinelConfig
+from ..config import SentinelHandlerConfig
 
 logger = help.ogler.getLogger()
 
@@ -28,7 +28,7 @@ logger = help.ogler.getLogger()
 class KELService:
     """Service for managing Wireguard configs based on KEL events."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         self.config = config
 
     async def update_peer_for_aid(

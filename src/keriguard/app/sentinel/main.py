@@ -16,7 +16,7 @@ from sentinel.framework import register_handler, run
 from keri import help
 
 from .handler import KeriguardEventHandler
-from .config import SentinelConfig
+from .config import SentinelHandlerConfig
 
 logger = help.ogler.getLogger()
 
@@ -86,7 +86,7 @@ def main():
     rgy = credentialing.Regery(hby=hby, name=hby.name, base=hby.base, temp=hby.temp)
 
     # Create configuration
-    config = SentinelConfig(
+    config = SentinelHandlerConfig(
         export_dir=str(export_dir),
         poll_interval=args.poll_interval,
         config_dir=args.config_dir,

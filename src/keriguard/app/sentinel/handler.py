@@ -12,7 +12,7 @@ from sentinel.framework import EventHandler, KELEvent, TELEvent, CredentialEvent
 from keri import help
 
 # Handler-specific imports
-from .config import SentinelConfig
+from .config import SentinelHandlerConfig
 from .handlers.kel_handler import KELHandler
 from .handlers.tel_handler import TELHandler
 from .handlers.cred_handler import CredHandler
@@ -30,7 +30,7 @@ class KeriguardEventHandler(EventHandler):
     - Credential events: Handle credential-based peer access control
     """
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         """Initialize the handler with configuration."""
         self.config = config
 

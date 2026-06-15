@@ -12,7 +12,7 @@ from keri.vdr.credentialing import Regery
 
 
 @dataclass
-class SentinelConfig:
+class SentinelHandlerConfig:
     """Configuration for Sentinel event handler."""
 
     # Sentinel framework settings

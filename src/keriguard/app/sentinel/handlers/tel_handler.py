@@ -8,7 +8,7 @@ TEL (Transaction Event Log) event handler.
 from sentinel.framework import TELEvent
 from keri import help
 
-from ..config import SentinelConfig
+from ..config import SentinelHandlerConfig
 from ..services.tel_service import TELService
 
 logger = help.ogler.getLogger()
@@ -17,7 +17,7 @@ logger = help.ogler.getLogger()
 class TELHandler:
     """Handler for TEL events - manages transaction-based peer authorizations."""
 
-    def __init__(self, config: SentinelConfig):
+    def __init__(self, config: SentinelHandlerConfig):
         self.config = config
         self.service = TELService(config)
 

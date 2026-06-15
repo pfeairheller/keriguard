@@ -12,14 +12,21 @@ registrar:
   # Format: http(s)://<host>:<port>/oobi/<aid>/witness or /controller
   oobi: "http://127.0.0.1:5642/oobi/EBraKLI-FshC4NeiDnJZMmypYaHAb7kbzlL6tEIT0Cip/witness"
 
-  # The registrar's IP address on the trustnet
-  ipaddress: "10.0.51.1"
-
-  # The registrar's physical address and port on the internet
-  endpoint: "137.184.46.91:51820"
-
   # Registrar API endpoint for publishing credentials
   url: "http://127.0.0.1:8080"
+
+  keriguard:
+    # The registrar's keriguard AID
+    aid: "EBraKLI-FshC4NeiDnJZMmypYaHAb7kbzlL6tEIT0Cip"
+
+    # The registrar's keriguard OOBI
+    oobi: "http://127.0.0.1:5642/oobi/EBraKLI-FshC4NeiDnJZMmypYaHAb7kbzlL6tEIT0Cip/witness"
+
+    # The registrar's IP address on the trustnet
+    ipaddress: "10.0.51.1/32"
+
+    # The registrar's physical address and port on the internet
+    endpoint: "137.184.80.45:51820"
 
 # Issuer Configuration
 # The issuer is responsible for issuing verifiable credentials for interfaces and connections
