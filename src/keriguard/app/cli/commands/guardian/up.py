@@ -8,21 +8,18 @@ Initialize the KERIGuard server
 
 import argparse
 import asyncio
+import random
 
-import requests
 from keri import help, kering
 from keri.app import habbing, connecting
 from keri.app.keeping import Algos
-from keri.core import parsing, serdering
-from keri.help import helping
+from keri.core import parsing
 from keri.kering import ConfigurationError
 from sentinel.core.initializing import SentinelConfig
 
-from keriguard.core import querying
 from keriguard.core.initializing import (
     load_schema,
     load_oobi,
-    authenticate_witness,
     KeriguardConfig,
 )
 from keriguard.core.wireguarding import SCHEMA_OOBIS, Schema
@@ -112,15 +109,10 @@ async def up(args):
         name=keriguard_name, base=args.base, temp=False, **kwa
     )
     if not (keriguard_hab := keriguard_hby.habByName(keriguard_alias)):
-        keriguard_hab = keriguard_hby.makeHab(
-            name=keriguard_alias,
-            transferable=True,
-            icount=1,
-            isith="1",
-            ncount=1,
-            nsith="1",
-            toad=0,
-        )
+        raise ConfigurationError(f"KERIguard alias {keriguard_alias} not found")
+
+    if not keriguard_hab.kever.wits:
+        raise ConfigurationError(f"KERIguard alias {keriguard_alias} has no witnesses")
 
     # Create the environment and identifier for the sentinel
     sentinel_hby = habbing.Habery(name=sentinel_name, base=args.base, temp=False, **kwa)
@@ -155,37 +147,13 @@ async def up(args):
 
     keriguard_org.update(pre=sentinel_hab.pre, data=dict(alias=sentinel_alias))
 
-    print(f"KERIGuard AID generate: {keriguard_hab.pre}")
+    print(f"\n\nKERIGuard AID: {keriguard_hab.pre}\n")
 
-    while True:
-        oobi = input("Enter a witness OOBI (You can add more witness later): ")
-        try:
-            witness_aid = load_oobi(hby=keriguard_hby, oobi=oobi, alias="witness0")
-            break
-
-        except ValueError as err:
-            print(err)
-
-    auths = dict()
-    if args.authenticate:
-        print("Performing witness authentication...")
-        authenticate_witness(hab=sentinel_hab, witness=witness_aid)
-        code = input(f"Enter code for {witness_aid}: ")
-        auths[witness_aid] = f"{code}#{helping.nowIso8601()}"
-
-    print("Now rotating in new witness...")
-
-    raw = keriguard_hab.rotate(
-        isith="1", nsith="1", ncount=1, toad=1, adds=[witness_aid]
-    )
-    serder = serdering.SerderKERI(raw=raw)
-
-    receiptor = querying.Receiptor(hby=keriguard_hby)
-    await receiptor.receipt(serder.pre, serder.sn, auths=auths)
-
+    witness_aid = random.choice(keriguard_hab.kever.wits)
     urls = keriguard_hab.fetchUrls(
         eid=witness_aid, scheme=kering.Schemes.http
     ) or keriguard_hab.fetchUrls(eid=witness_aid, scheme=kering.Schemes.https)
+
     if not urls:
         raise kering.ConfigurationError(
             f"unable to query witness {witness_aid}, no http endpoint"
@@ -197,22 +165,16 @@ async def up(args):
         else urls[kering.Schemes.http]
     )
     keriguard_oobi = f"{url.rstrip("/")}/oobi/{keriguard_hab.pre}/witness"
-    print("keriguard OOBI:")
+    print("\n\nKERIGuard OOBI:")
     print(keriguard_oobi)
+    print()
 
     # Get keriguard KEL into Sentinel so he can respond to requests.
     load_oobi(hby=sentinel_hby, oobi=keriguard_oobi, alias="keriguard")
-
-    response = requests.get(config.registrar.oobi)
-    keriguard_hby.psr.parse(ims=response.content)
-    sentinel_hab.psr.parse(ims=response.content)
-
-    response = requests.get(config.issuer.oobi)
-    keriguard_hby.psr.parse(ims=response.content)
-    sentinel_hab.psr.parse(ims=response.content)
-
-    keriguard_hby.kvy.processEscrows()
-    sentinel_hab.kvy.processEscrows()
+    load_oobi(hby=keriguard_hby, oobi=config.registrar.oobi, alias="registrar")
+    load_oobi(hby=keriguard_hby, oobi=config.issuer.oobi, alias="issuer")
+    load_oobi(hby=sentinel_hby, oobi=config.registrar.oobi, alias="registrar")
+    load_oobi(hby=sentinel_hby, oobi=config.issuer.oobi, alias="issuer")
 
     if (
         config.registrar.aid not in keriguard_hby.kevers

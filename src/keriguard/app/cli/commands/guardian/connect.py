@@ -139,9 +139,13 @@ async def process(args):
                     watcher_connector = LocalWatcherConnector(hby, hab, sentinel_aid)
 
                     registrar = kgb.get_registrar()
-                    watcher_connector.watch(registrar.aid, registrar.oobi)
+                    if registrar.aid in hby.kevers:
+                        watcher_connector.watch(registrar.aid, registrar.oobi)
+
                     issuer = kgb.get_issuer()
-                    watcher_connector.watch(issuer.aid, issuer.oobi)
+                    if issuer.aid in hby.kevers:
+                        watcher_connector.watch(issuer.aid, issuer.oobi)
+
                     watcher_connector.watch(hab.pre, None)
 
                 case _:

@@ -14,8 +14,7 @@ from urllib.parse import urlparse
 import yaml
 import requests
 from keri.app import connecting
-from keri.app.httping import CESR_DESTINATION_HEADER
-from keri.core import scheming, coring
+from keri.core import scheming
 
 # Regex pattern to extract AID/prefix from OOBI URL
 # Matches: /oobi/{cid} or /oobi/{cid}/{role} or /oobi/{cid}/{role}/{eid}
@@ -54,27 +53,6 @@ def load_oobi(hby, oobi: str, alias: str):
     org.update(pre=aid, data=dict(alias=alias, oobi=oobi))
 
     return aid
-
-
-def authenticate_witness(hab, witness: str):
-    body = bytearray()
-    for msg in hab.db.clonePreIter(pre=hab.pre):
-        body.extend(msg)
-
-    fargs = dict([("kel", body.decode("utf-8"))])
-    headers = dict(
-        [("Content-Type", "multipart/form-data"), (CESR_DESTINATION_HEADER, witness)]
-    )
-
-    response = requests.post(witness, files=fargs, headers=headers)
-    response.raise_for_status()
-    data = response.json()
-
-    totp = data["totp"]
-    m = coring.Matter(qb64=totp)  # refactor this to use cipher
-    d = coring.Matter(qb64=hab.decrypt(ser=m.raw))
-
-    return d.raw.decode("utf-8")
 
 
 class RegistrarConfig:
