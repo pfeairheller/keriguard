@@ -24,6 +24,14 @@ logger = help.ogler.getLogger()
 class Schema:
     INTERFACE_SCHEMA = "ECRYEV1yPd4vnYNMqFSbTzvoxfz9iFlRMRTquU2uCAbY"
     CONNECTION_SCHEMA = "EBgZ2DHFAGsnoTluBoigLkIGf0Wrw7sZm8ztUj4PKp7A"
+    TRUSTNET_SCHEMA = "EDEtWN9L3Eguugoa9AyUC6L_4mCQqVvlVEbKAKPoBCwy"
+
+
+SCHEMA_OOBIS = {
+    Schema.INTERFACE_SCHEMA: f"https://healthkeri-schema.sfo3.digitaloceanspaces.com/oobi/{Schema.INTERFACE_SCHEMA}",
+    Schema.CONNECTION_SCHEMA: f"https://healthkeri-schema.sfo3.digitaloceanspaces.com/oobi/{Schema.CONNECTION_SCHEMA}",
+    Schema.TRUSTNET_SCHEMA: f"https://healthkeri-schema.sfo3.digitaloceanspaces.com/oobi/{Schema.TRUSTNET_SCHEMA}",
+}
 
 
 # ============================================================================

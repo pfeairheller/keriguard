@@ -1,0 +1,199 @@
+# -*- encoding: utf-8 -*-
+"""
+keriguard.core.initializing module
+
+Methods for initializing a KERIGuard instance
+
+"""
+
+import re
+from pathlib import Path
+from typing import Optional, Dict, Any
+from urllib.parse import urlparse
+
+import yaml
+import requests
+from keri.app import connecting
+from keri.app.httping import CESR_DESTINATION_HEADER
+from keri.core import scheming, coring
+
+# Regex pattern to extract AID/prefix from OOBI URL
+# Matches: /oobi/{cid} or /oobi/{cid}/{role} or /oobi/{cid}/{role}/{eid}
+OOBI_RE = re.compile(
+    r"\A/oobi/(?P<cid>[^/]+)(?:/(?P<role>[^/]+)(?:/(?P<eid>[^/]+))?)?\Z", re.IGNORECASE
+)
+
+
+def load_schema(hby, schema_oobi: str, schema_said: str):
+    response = requests.get(schema_oobi)
+    schemer = scheming.Schemer(raw=bytearray(response.content))
+    if schemer.said == schema_said:
+        hby.db.schema.pin(keys=(schemer.said,), val=schemer)
+        return True
+
+    return False
+
+
+def load_oobi(hby, oobi: str, alias: str):
+    org = connecting.Organizer(hby=hby)
+    purl = urlparse(oobi)
+    match = OOBI_RE.match(purl.path)
+    if not match:
+        raise ValueError(f"Invalid OOBI URL {oobi}")
+
+    aid = match.group("cid")
+
+    response = requests.get(oobi)
+    response.raise_for_status()
+
+    hby.psr.parse(ims=response.content)
+    if aid not in hby.kevers:
+        raise ValueError(f"Invalid OOBI URL {oobi} for {aid}")
+
+    hby.kvy.processEscrows()
+    org.update(pre=aid, data=dict(alias=alias, oobi=oobi))
+
+    return aid
+
+
+def authenticate_witness(hab, witness: str):
+    body = bytearray()
+    for msg in hab.db.clonePreIter(pre=hab.pre):
+        body.extend(msg)
+
+    fargs = dict([("kel", body.decode("utf-8"))])
+    headers = dict(
+        [("Content-Type", "multipart/form-data"), (CESR_DESTINATION_HEADER, witness)]
+    )
+
+    response = requests.post(witness, files=fargs, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+
+    totp = data["totp"]
+    m = coring.Matter(qb64=totp)  # refactor this to use cipher
+    d = coring.Matter(qb64=hab.decrypt(ser=m.raw))
+
+    return d.raw.decode("utf-8")
+
+
+class RegistrarConfig:
+    """Configuration for the registrar."""
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+
+    @property
+    def aid(self) -> str:
+        """The registrar's AID."""
+        return self._data.get("aid", "")
+
+    @property
+    def oobi(self) -> str:
+        """The registrar's OOBI URL."""
+        return self._data.get("oobi", "")
+
+    @property
+    def url(self) -> Optional[str]:
+        """The registrar's API endpoint URL."""
+        return self._data.get("url")
+
+    @property
+    def ipaddress(self) -> Optional[str]:
+        """The registrar's internal Wireguard address."""
+        return self._data.get("ipaddress")
+
+    @ipaddress.setter
+    def ipaddress(self, value: Optional[str]) -> None:
+        """Set the registrar's internal Wireguard address."""
+        if value is None:
+            self._data.pop("ipaddress", None)
+        else:
+            self._data["ipaddress"] = value
+
+    @property
+    def endpoint(self) -> Optional[str]:
+        """The registrar's Wireguard address and port."""
+        return self._data.get("endpoint")
+
+    @endpoint.setter
+    def endpoint(self, value: Optional[str]) -> None:
+        """Set the registrar's Wireguard address and port."""
+        if value is None:
+            self._data.pop("endpoint", None)
+        else:
+            self._data["endpoint"] = value
+
+
+class IssuerConfig:
+    """Configuration for the issuer."""
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+
+    @property
+    def aid(self) -> str:
+        """The issuer's AID."""
+        return self._data.get("aid", "")
+
+    @property
+    def oobi(self) -> str:
+        """The issuer's OOBI URL."""
+        return self._data.get("oobi", "")
+
+
+class KeriguardConfig:
+    """
+    Configuration loader and accessor for KERIGuard initialization.
+
+    This class reads a YAML configuration file and provides typed access
+    to all configuration values needed for initializing a KERIGuard instance.
+
+    Example:
+        config = KeriguardConfig.load("/path/to/keriguard.conf")
+        print(config.registrar.aid)
+        print(config.registrar.keriguard.oobi)
+        print(config.issuer.aid)
+    """
+
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+        self._registrar = RegistrarConfig(data.get("registrar", {}))
+        self._issuer = IssuerConfig(data.get("issuer", {}))
+
+    @classmethod
+    def load(cls, config_path: str) -> "KeriguardConfig":
+        """
+        Load configuration from a YAML file.
+
+        Args:
+            config_path: Path to the YAML configuration file
+
+        Returns:
+            KeriguardConfig instance with loaded configuration
+
+        Raises:
+            FileNotFoundError: If the configuration file doesn't exist
+            yaml.YAMLError: If the YAML is malformed
+        """
+        path = Path(config_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+        with open(path, "r") as f:
+            data = yaml.safe_load(f)
+
+        if data is None:
+            data = {}
+
+        return cls(data)
+
+    @property
+    def registrar(self) -> RegistrarConfig:
+        """The registrar configuration."""
+        return self._registrar
+
+    @property
+    def issuer(self) -> IssuerConfig:
+        """The issuer configuration."""
+        return self._issuer

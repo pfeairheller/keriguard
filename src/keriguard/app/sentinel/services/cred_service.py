@@ -32,12 +32,14 @@ class CredService:
         self,
         hby,
         rgy,
+        kgb,
         config_dir,
         hab=None,
         sentinel_aid=None,
     ):
         self.hby = hby
         self.hab = hab
+        self.kgb = kgb
         self.sentinel_aid = sentinel_aid
         self.rgy = rgy
         self.config_dir = config_dir
@@ -76,6 +78,18 @@ class CredService:
                 config_name=interface_name,
                 description=interface_description,
             )
+            registrar = self.kgb.get_registrar()
+            if registrar and registrar.endpoint:
+                manager.add_peer_to_config(
+                    config,
+                    allowed_ips=registrar.ipaddress,
+                    endpoint=registrar.endpoint,
+                    persistent_keepalive=None,
+                    preshared_key=None,
+                    peer_name="registrar",
+                    keri_aid=registrar.aid,
+                )
+
         else:
             manager = WireguardConfigManager(hab=hab)
             config = manager.load_config(config_path)

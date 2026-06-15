@@ -307,6 +307,100 @@ class Issuer:
             traceback.print_exc()
             raise ValueError(f"Failed to issue connection credential: {e}")
 
+    async def issue_trustnet_credential(
+        self,
+        recipient,
+        registry_name,
+        registrar: dict,
+        issuer: dict,
+        auths: dict,
+    ):
+        """
+        Issue a trustnet credential defining trust network configuration.
+
+        Args:
+            recipient: AID of the credential recipient (issuee)
+            registry_name: Name of the registry to use
+            registrar: Registrar configuration dict with aid, oobi, url (optional), and keriguard dict
+            issuer: Issuer configuration dict with aid and oobi
+            auths: Authorization dict for the registrar
+
+        Returns:
+            The created credential (Creder object)
+        """
+        dt = datetime.now(UTC).isoformat()
+        credential_data = {
+            "dt": dt,
+            "registrar": registrar,
+            "issuer": issuer,
+        }
+
+        try:
+            registry = self.rgy.registryByName(registry_name)
+            if registry is None:
+                raise kering.ConfigurationError(
+                    f"Registry '{registry_name}' not found. "
+                    f"Create with: kli vc registry incept --name {self.hby.name} --alias {self.hab.name} "
+                    f"--registry-name "
+                    f"{registry_name}"
+                )
+
+            # Create credential
+            creder = self.credentialer.create(
+                regname=registry_name,
+                recp=recipient,
+                schema=Schema.TRUSTNET_SCHEMA,
+                data=credential_data,
+                source=None,
+                rules=None,
+                private=True,
+            )
+
+            iserder = registry.issue(said=creder.said, dt=dt)
+
+            # Anchor to KEL
+            rseal = dict(i=creder.said, s=iserder.ked["s"], d=iserder.said)
+            anc = self.hab.interact(data=[rseal])
+
+            aserder = serdering.SerderKERI(raw=anc)
+
+            await self.receiptor.receipt(aserder.pre, aserder.sn, auths=auths)
+
+            # Issue to TEL
+            prefixer = coring.Prefixer(qb64=iserder.pre)
+            seqner = coring.Seqner(sn=iserder.sn)
+
+            try:
+                self.verifier.processCredential(
+                    creder=creder,
+                    prefixer=prefixer,
+                    seqner=seqner,
+                    saider=coring.Saider(qb64=iserder.said),
+                )
+            except kering.MissingRegistryError:
+                pass
+
+            self.registrar.issue(creder, iserder, aserder, auths=auths)
+
+            snkey = dbing.snKey(creder.said, 0)
+            while not self.rgy.reger.getTel(key=snkey):
+                self.hab.kvy.processEscrows()
+                self.rgy.processEscrows()
+                self.credentialer.processEscrows()
+                self.verifier.processEscrows()
+                await asyncio.sleep(0.1)
+
+            return creder
+
+        except kering.ValidationError as e:
+            raise ValueError(f"Credential validation failed: {e}")
+
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            raise ValueError(f"Failed to issue trustnet credential: {e}")
+
     def grant(self, credential_said, recipient):
         creder, prefixer, seqner, saider = self.rgy.reger.cloneCred(
             said=credential_said

@@ -8,24 +8,33 @@ import argparse
 import asyncio
 import sys
 
-from keri import help
+from keri import help, kering
+from keri.app import connecting
 from keri.app.cli.common import existing
 from keri.core import serdering, parsing, coring
 from keri.peer import exchanging
 from keri.vdr import credentialing, verifying
+from sentinel.framework.watching import LocalWatcherConnector
 
 from keriguard.app.sentinel.services import CredService
 from keriguard.core.wireguarding import Schema
 from keriguard.db.basing import KERIGuardBaser
 
 parser = argparse.ArgumentParser(
-    description="Process a KERIGuard credential and generate Wireguard configuration"
+    description="Process interface credential and generate Wireguard configuration"
 )
 parser.set_defaults(handler=lambda args: asyncio.run(process(args)))
 parser.add_argument(
     "--name",
     "-n",
     help="keystore name and file location of KERI keystore",
+    required=False,
+    default="keriguard",
+)
+parser.add_argument(
+    "--alias",
+    "-a",
+    help="human readable alias for the new identifier prefix",
     required=False,
     default="keriguard",
 )
@@ -67,6 +76,7 @@ logger = help.ogler.getLogger()
 async def process(args):
     """Generate a Wireguard interface configuration with KERI-tracked keys."""
     name = args.name
+    alias = args.alias
     bran = args.bran
 
     if not name:
@@ -81,7 +91,10 @@ async def process(args):
         print("KERIGuard credential file is empty or does not exist.")
         return 1
 
-    with existing.existingHby(name=name, base=args.base, bran=bran) as (hby):
+    with existing.existingHab(name=name, alias=alias, base=args.base, bran=bran) as (
+        hby,
+        hab,
+    ):
         kgb = KERIGuardBaser(name=name, base=args.base)
 
         grant = serdering.SerderKERI(raw=bytes(data))
@@ -99,7 +112,6 @@ async def process(args):
         pserder, pathed = exchanging.cloneMessage(hby, said=grant.said)
         embeds = grant.ked["e"]
         acdc = embeds["acdc"]
-        # issr = acdc['i']
 
         for label in ("anc", "reg", "iss", "acdc"):
             ked = embeds[label]
@@ -114,10 +126,26 @@ async def process(args):
             match creder.schema:
                 case Schema.INTERFACE_SCHEMA:
                     await service.process_interface_credential(creder.said, creder)
-                case Schema.CONNECTION_SCHEMA:
-                    await service.process_connection_credential(creder.said, creder)
+
+                    sentinel_name = f"{name}-sentinel"
+                    org = connecting.Organizer(hby=hby)
+                    results = org.find("alias", sentinel_name)
+                    if not results:
+                        raise kering.ConfigurationError(
+                            f"Sentinel '{sentinel_name}' not found. You must run `kg up` first."
+                        )
+                    sentinel_aid = results[0].get("id")
+
+                    watcher_connector = LocalWatcherConnector(hby, hab, sentinel_aid)
+
+                    registrar = kgb.get_registrar()
+                    watcher_connector.watch(registrar.aid, registrar.oobi)
+                    issuer = kgb.get_issuer()
+                    watcher_connector.watch(issuer.aid, issuer.oobi)
+                    watcher_connector.watch(hab.pre, None)
+
                 case _:
-                    print(f"Unknown credential schema: {creder.schema}")
+                    print(f"Invalid credential schema: {creder.schema}")
                     return -1
 
             return 0

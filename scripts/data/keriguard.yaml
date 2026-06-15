@@ -1,0 +1,31 @@
+# KERIGuard Initialization Configuration
+# This configuration file specifies the external entities that a KERIGuard instance
+# needs to interact with during initialization and operation.
+
+# Registrar Configuration
+# The registrar is responsible for managing and publishing credentials
+registrar:
+  # The registrar's KERI AID (Autonomic Identifier)
+  aid: "EBraKLI-FshC4NeiDnJZMmypYaHAb7kbzlL6tEIT0Cip"
+
+  # The registrar's OOBI (Out-Of-Band Introduction) URL
+  # Format: http(s)://<host>:<port>/oobi/<aid>/witness or /controller
+  oobi: "http://127.0.0.1:5642/oobi/EBraKLI-FshC4NeiDnJZMmypYaHAb7kbzlL6tEIT0Cip/witness"
+
+  # The registrar's IP address on the trustnet
+  ipaddress: "10.0.51.1"
+
+  # The registrar's physical address and port on the internet
+  endpoint: "137.184.46.91:51820"
+
+  # Registrar API endpoint for publishing credentials
+  url: "http://127.0.0.1:8080"
+
+# Issuer Configuration
+# The issuer is responsible for issuing verifiable credentials for interfaces and connections
+issuer:
+  # The issuer's KERI AID (typically the admin or controller)
+  aid: "EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr"
+
+  # The issuer's OOBI URL
+  oobi: "http://127.0.0.1:5642/oobi/EI6-tTwfonE2nKknuUkhkwRe-Op7kTYIeCUJcuuMUFUr/witness"
